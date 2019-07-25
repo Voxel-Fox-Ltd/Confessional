@@ -1,15 +1,16 @@
 from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 
-from discord import Embed
-from discord.ext.commands import command, has_permissions, bot_has_permissions, DMChannel
+from discord import Embed, DMChannel, Message
+from discord.ext.commands import command, has_permissions, bot_has_permissions, Context
 
 from cogs.utils.custom_bot import CustomBot
 from cogs.utils.custom_cog import Cog
 
 
 CODEDIGITS = ASCII_LOWERCASE + '0123456789'
-get_code = lambda: choices(CODEDIGITS, k=5)
+def get_code(n:int=5) -> str:
+    return ''.join(choices(CODEDIGITS, k=n))
 
 
 class Confession(Cog):
@@ -27,6 +28,7 @@ class Confession(Cog):
         '''Creates a confession channel for the bot to run responses to'''
 
         # Get a code that hasn't been cached
+        print(0)
         while True:
             code = get_code()
             if code not in self.bot.confession_channels:
@@ -36,7 +38,7 @@ class Confession(Cog):
         channel = await ctx.guild.create_text_channel(
             f"confessional-{code}",
             reason="Confessional channel created",
-            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is `{code}`."
+            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\"."
         )
 
         # Cache it

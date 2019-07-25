@@ -17,5 +17,5 @@ CREATE TABLE command_log(
 
 CREATE TABLE confession_channel(
     code VARCHAR(5) PRIMARY KEY,
-    channel_id BIGINT,
+    channel_id BIGINT
 );

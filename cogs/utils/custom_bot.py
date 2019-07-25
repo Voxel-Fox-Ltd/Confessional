@@ -100,9 +100,9 @@ class CustomBot(AutoShardedBot):
 
         # Get the confession channels
         try:
-            con_channels = await db('SELECT * FROM guild_confession_channel')
+            con_channels = await db('SELECT * FROM confession_channel')
         except Exception as e:
-            logger.critical(f"Exception raised on guild_confession_channel SELECT query: {e}")
+            logger.critical(f"Exception raised on confession_channel SELECT query: {e}")
             exit(1)
         self.confession_channels = {i['code']: i['channel_id'] for i in con_channels}
 
@@ -162,6 +162,9 @@ class CustomBot(AutoShardedBot):
                 log_string += 'sucess'
             except Exception as e:
                 log_string += str(e)
+                logger.critical(log_string)
+                raise e
+                exit(1)
             logger.debug(log_string)
 
 
