@@ -69,7 +69,7 @@ class CustomBot(AutoShardedBot):
         permissions.read_messages = True 
         permissions.send_messages = True 
         permissions.embed_links = True 
-        permissions.attach_files = True 
+        permissions.manage_channels = True
         self._invite_link = 'https://discordapp.com/oauth2/authorize?' + urlencode({
             'client_id': self.user.id,
             'scope': 'bot',
