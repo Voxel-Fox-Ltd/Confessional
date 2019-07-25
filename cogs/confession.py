@@ -2,6 +2,7 @@ from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 
 from discord import Embed, DMChannel, Message, PermissionOverwrite
+from discord.errors import NotFound as DiscordNotFound
 from discord.ext.commands import command, has_permissions, bot_has_permissions, Context, MissingPermissions, BotMissingPermissions
 
 from cogs.utils.custom_bot import CustomBot
@@ -38,14 +39,23 @@ class Confession(Cog):
     @command()
     @has_permissions(manage_channels=True)
     @bot_has_permissions(manage_channels=True, embed_links=True)
-    async def createchannel(self, ctx: Context):
+    async def createchannel(self, ctx: Context, code:str=None):
         '''Creates a confession channel for the bot to run responses to'''
 
-        # Get a code that hasn't been cached
-        while True:
-            code = get_code()
-            if code not in self.bot.confession_channels:
-                break
+        # Get a code for the user
+        if code:
+            if len(code) > 5:
+                await ctx.send("The maximum length for your channel code is 5 characters.")
+                return 
+            if code in self.bot.confession_channels:
+                await ctx.send(f"The code `{code}` is already in use. Sorry :/")
+                return
+            code = code.lower()
+        else:
+            while True:
+                code = get_code()
+                if code not in self.bot.confession_channels:
+                    break
 
         # Create a channel with that name
         overwrites = {
@@ -130,7 +140,10 @@ class Confession(Cog):
             except KeyError:
                 pass 
             return
-        confession_channel = self.bot.get_channel(confession_channel_id) or await self.bot.fetch_channel(confession_channel_id)
+        try:
+            confession_channel = self.bot.get_channel(confession_channel_id) or await self.bot.fetch_channel(confession_channel_id)
+        except DiscordNotFound:
+            confession_channel = None
         if confession_channel is None:
             await channel.send(f"The code `{code_message.content}` doesn't refer to a given confession channel. Please give your confession again to be able to provide a new channel code.")
             try:
