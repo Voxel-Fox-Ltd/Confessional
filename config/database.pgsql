@@ -13,3 +13,9 @@ CREATE TABLE command_log(
     command_prefix VARCHAR(2000),
     timestamp TIMESTAMP
 );
+
+
+CREATE TABLE confession_channel(
+    code VARCHAR(5) PRIMARY KEY,
+    channel_id BIGINT,
+);

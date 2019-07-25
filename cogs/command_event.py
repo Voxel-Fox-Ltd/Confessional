@@ -39,7 +39,7 @@ class CommandEvent(Cog):
         if not cog:
             logger = self.log_handler
         else:
-            logger = cog.log_handler 
+            logger = getattr(cog, 'log_handler', self.log_handler)
         if ctx.guild:
             logger.debug(f"Command '{ctx.command.qualified_name}' run by {ctx.author.id} on {ctx.guild.id}/{ctx.channel.id}")
         else:

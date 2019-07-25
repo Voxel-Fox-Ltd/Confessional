@@ -5,6 +5,7 @@ from glob import glob
 from re import compile
 from logging import getLogger
 from urllib.parse import urlencode
+from typing import Dict
 
 from aiohttp import ClientSession
 from discord import Game, Message, Permissions
@@ -12,7 +13,6 @@ from discord.ext.commands import AutoShardedBot, when_mentioned_or, cooldown
 from discord.ext.commands.cooldowns import BucketType
 
 from cogs.utils.database import DatabaseConnection
-# from cogs.utils.custom_context import CustomContext
 
 
 logger = getLogger('confession')
@@ -52,9 +52,13 @@ class CustomBot(AutoShardedBot):
         # Store the startup method so I can see if it completed successfully
         self.startup_time = dt.now()
         self.startup_method = None
-        
-        # Add a cooldown to help
-        # cooldown(1, 5, BucketType.user)(self.get_command('help'))
+
+        # Store the confession channels for a guild
+        self.confession_channels: Dict[str, int] = {}  # code: channel_id
+
+    @property
+    def code_channels(self) -> Dict[int, str]:
+        return {o:i for i,o in self.confession_channels.items()}
 
 
     @property 
@@ -85,6 +89,25 @@ class CustomBot(AutoShardedBot):
 
         # Remove caches
         logger.debug("Clearing caches")
+        self.confession_channels.clear()
+
+        # Open db 
+        try:
+            db: DatabaseConnection = await self.database.get_connection()
+        except Exception as e:
+            logger.critical(f"Exception raised on DB connect {e}")
+            exit(1)
+
+        # Get the confession channels
+        try:
+            con_channels = await db('SELECT * FROM guild_confession_channel')
+        except Exception as e:
+            logger.critical(f"Exception raised on guild_confession_channel SELECT query: {e}")
+            exit(1)
+        self.confession_channels = {i['code']: i['channel_id'] for i in con_channels}
+
+        # Close db 
+        await db.disconnect()
 
         # Wait for the bot to cache users before continuing
         logger.debug("Waiting until ready before completing startup method.")
