@@ -2,7 +2,7 @@ from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 
 from discord import Embed, DMChannel, Message, PermissionOverwrite
-from discord.ext.commands import command, has_permissions, bot_has_permissions, Context
+from discord.ext.commands import command, has_permissions, bot_has_permissions, Context, MissingPermissions, BotMissingPermissions
 
 from cogs.utils.custom_bot import CustomBot
 from cogs.utils.custom_cog import Cog
@@ -19,6 +19,20 @@ class Confession(Cog):
         super().__init__(self.__class__.__name__)
         self.bot = bot
         self.currently_confessing = set()  # A set rather than a list because it uses a hash table
+
+
+    async def cog_error(self, ctx:Context, error):
+        '''Handles errors for this particular cog'''
+
+        if isinstance(error, MissingPermissions):
+            error: MissingPermissions = error
+            if ctx.author.id in self.bot.config['owners']:
+                await ctx.reinvoke() 
+                return 
+            await ctx.send(f"You need to have the `{error.missing_perms[0]}` permission to run this command.")
+    
+        elif isinstance(error, BotMissingPermissions):
+            await ctx.send(f"I'm missing the `{error.missing_perms[0]} permission required to run this command.")
 
 
     @command()
@@ -41,7 +55,7 @@ class Confession(Cog):
         channel = await ctx.guild.create_text_channel(
             f"confessional-{code}",
             reason="Confessional channel created",
-            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\". PM the bot your confession, and then provide \"{code.upper()}\" as your channel code.",
+            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\". PM the bot your confession, and then provide \"{code.upper()}\" as your channel code when it's asked for.",
             overwrites=overwrites,
         )
 
