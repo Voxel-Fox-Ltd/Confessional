@@ -35,10 +35,12 @@ class Confession(Cog):
         elif isinstance(error, BotMissingPermissions):
             await ctx.send(f"I'm missing the `{error.missing_perms[0]} permission required to run this command.")
 
+        raise error
+
 
     @command()
     @has_permissions(manage_channels=True)
-    @bot_has_permissions(manage_channels=True, embed_links=True)
+    @bot_has_permissions(manage_channels=True)
     async def createchannel(self, ctx: Context, code:str=None):
         '''Creates a confession channel for the bot to run responses to'''
 
@@ -47,7 +49,7 @@ class Confession(Cog):
             if len(code) > 5:
                 await ctx.send("The maximum length for your channel code is 5 characters.")
                 return 
-            if code in self.bot.confession_channels:
+            if code.lower() in self.bot.confession_channels:
                 await ctx.send(f"The code `{code}` is already in use. Sorry :/")
                 return
             code = code.lower()
@@ -104,6 +106,9 @@ class Confession(Cog):
         confession = original_message.content
         if len(confession) > 1000:
             await channel.send("Your confession can only be 1000 characters I'm afraid - please shorten it and try again.")
+            return
+        elif original_message.attachments:
+            await channel.send("I don't support sending images right now, I'm afraid. Sorry!")
             return
 
         # Okay it should be alright - add em to the cache
