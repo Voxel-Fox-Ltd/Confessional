@@ -28,7 +28,6 @@ class Confession(Cog):
         '''Creates a confession channel for the bot to run responses to'''
 
         # Get a code that hasn't been cached
-        print(0)
         while True:
             code = get_code()
             if code not in self.bot.confession_channels:
@@ -38,7 +37,7 @@ class Confession(Cog):
         channel = await ctx.guild.create_text_channel(
             f"confessional-{code}",
             reason="Confessional channel created",
-            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\"."
+            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\". PM the bot your confession, and then provide \"{code.upper()}\" as your channel code."
         )
 
         # Cache it
