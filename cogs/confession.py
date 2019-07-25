@@ -1,7 +1,7 @@
 from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 
-from discord import Embed, DMChannel, Message
+from discord import Embed, DMChannel, Message, PermissionOverwrite
 from discord.ext.commands import command, has_permissions, bot_has_permissions, Context
 
 from cogs.utils.custom_bot import CustomBot
@@ -34,10 +34,15 @@ class Confession(Cog):
                 break
 
         # Create a channel with that name
+        overwrites = {
+            ctx.guild.default_role: PermissionOverwrite(read_messages=True, send_messages=False),
+            ctx.guild.me: PermissionOverwrite(send_messages=True, embed_links=True),
+        }
         channel = await ctx.guild.create_text_channel(
             f"confessional-{code}",
             reason="Confessional channel created",
-            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\". PM the bot your confession, and then provide \"{code.upper()}\" as your channel code."
+            topic=f"A confessional channel for use with {ctx.guild.me.mention}. The code for this channel is \"{code.upper()}\". PM the bot your confession, and then provide \"{code.upper()}\" as your channel code.",
+            overwrites=overwrites,
         )
 
         # Cache it
