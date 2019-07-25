@@ -187,7 +187,7 @@ class Confession(Cog):
             self.currently_confessing.remove(original_message.author.id)
         except KeyError:
             pass 
-        self.log_handler.info(f"Sent confession from {original_message.author.id} to {confession_channel.id} -> {confession}")
+        self.log_handler.info(f"Sent confession from {original_message.author.id} to {confession_channel.id} ({code: >5}) -> {confession}")
 
 
 def setup(bot:CustomBot):
