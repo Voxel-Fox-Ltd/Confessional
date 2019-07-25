@@ -27,7 +27,7 @@ class ChannelEvent(Cog):
         # It exists
         self.log_handler.info(f"Deleting inaccessible channel with ID {channel.id} and code {code.upper()}")
         async with self.bot.database() as db:
-            await db('DELETE FREOM confession_channel WHERE channel_id=$1', channel.id)
+            await db('DELETE FROM confession_channel WHERE channel_id=$1', channel.id)
         del self.bot.confession_channels[code]
 
 
