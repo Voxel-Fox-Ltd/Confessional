@@ -9,6 +9,7 @@ from typing import Dict
 
 from aiohttp import ClientSession
 from discord import Game, Message, Permissions
+from discord.errors import NotFound as DiscordNotFound
 from discord.ext.commands import AutoShardedBot, when_mentioned_or, cooldown
 from discord.ext.commands.cooldowns import BucketType
 
@@ -106,12 +107,24 @@ class CustomBot(AutoShardedBot):
             exit(1)
         self.confession_channels = {i['code']: i['channel_id'] for i in con_channels}
 
-        # Close db 
-        await db.disconnect()
-
         # Wait for the bot to cache users before continuing
         logger.debug("Waiting until ready before completing startup method.")
         await self.wait_until_ready() 
+
+        # Go through and delete channels we don't care about any more
+        logger.debug("Deleting inaccesible channels...")
+        for code, channel_id in con_channels:
+            try:
+                channel = self.get_channel(channel_id) or await self.fetch_channel(channel_id)
+            except DiscordNotFound:
+                channel = None 
+            if channel is None:
+                logger.info(f"Deleting inaccessible channel with ID {channel_id} and code {code.upper()}")
+                await db('DELETE FROM confession_channel WHERE channel_id=$1', channel_id)
+                del self.confession_channels[code]
+
+        # Close db 
+        await db.disconnect()
         
         
     async def on_message(self, message):
