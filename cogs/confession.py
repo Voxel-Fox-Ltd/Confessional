@@ -1,5 +1,6 @@
 from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
+from asyncio import TimeoutError as AsyncTimeoutError
 
 from discord import Embed, DMChannel, Message, PermissionOverwrite
 from discord.errors import NotFound as DiscordNotFound
@@ -118,7 +119,7 @@ class Confession(Cog):
         await channel.send("What's the code for the channel you want to confess to?")
         try:
             code_message = await self.bot.wait_for("message", check=lambda m: isinstance(m.channel, DMChannel) and m.author.id == original_message.author.id, timeout=120)
-        except TimeoutError:
+        except AsyncTimeoutError:
             await channel.send("The timer for you to give a channel code has timed out. Please give your confession again to be able to provide another.")
             try:
                 self.currently_confessing.remove(original_message.author.id)
