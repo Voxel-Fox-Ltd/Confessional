@@ -19,3 +19,10 @@ CREATE TABLE confession_channel(
     code VARCHAR(5) PRIMARY KEY,
     channel_id BIGINT
 );
+
+
+CREATE TABLE banned_users(
+    guild_id BIGINT,
+    user_id BIGINT,
+    PRIMARY KEY (guild_id, user_id)
+);

@@ -1,8 +1,10 @@
 from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 from asyncio import TimeoutError as AsyncTimeoutError
+from typing import Dict
 
-from discord import Embed, DMChannel, Message, PermissionOverwrite
+from asyncpg import UniqueViolationError
+from discord import Embed, DMChannel, Message, PermissionOverwrite, User
 from discord.errors import NotFound as DiscordNotFound
 from discord.ext.commands import command, has_permissions, bot_has_permissions, Context, MissingPermissions, BotMissingPermissions
 
@@ -21,6 +23,7 @@ class Confession(Cog):
         super().__init__(self.__class__.__name__)
         self.bot = bot
         self.currently_confessing = set()  # A set rather than a list because it uses a hash table
+        self.confession_users: Dict[str, User] = {}  # uuid: User
 
 
     async def cog_error(self, ctx:Context, error):
@@ -37,6 +40,40 @@ class Confession(Cog):
             await ctx.send(f"I'm missing the `{error.missing_perms[0]} permission required to run this command.")
 
         raise error
+
+
+    @command()
+    @has_permissions(manage_messages=True)
+    async def banuser(self, ctx:Context, uuid:str):
+        '''Bans a user from being able to send in any more confessions to your server'''
+
+        # Make sure it's valid
+        if len(uuid) != 16:
+            await ctx.send("You've not posted a valid ID. Please try again.")
+            return 
+
+        # Make sure it's real
+        if uuid.lower() not in self.confession_users:
+            await ctx.send("The ID provided is not one that I currently have cached. Please try again.")
+            return 
+
+        # Get and ban em
+        user_to_ban = self.confession_users.get(uuid.lower())
+        if user_to_ban is None:
+            await ctx.send("The ID provided doesn't point to a user. Please try again.")
+        async with self.bot.database() as db:
+            try:
+                await db('INSER INTO banned_users (guild_id, user_id) VALUES ($1, $2)', ctx.guild.id, user_to_ban.id)
+            except UniqueViolationError:
+                pass 
+
+        # Tell people about it
+        try:
+            await user_to_ban.send("You've been banned from posting confessions on the server **{ctx.guild.id}**. Your identity is still a secret. Don't worry about it too much.")
+        except Exception:
+            pass
+        await ctx.send("That user has been banned from sending in more confessions on your server.")
+
 
 
     @command()
@@ -167,6 +204,15 @@ class Confession(Cog):
                 pass 
             return
 
+        # Check they're allowed to send messages to that guild
+        if (confession_channel.guild.id, original_message.author.id) in self.bot.banned_users:
+            await channel.send("You've been banned from sending messages in to that server :/")
+            try:
+                self.currently_confessing.remove(original_message.author.id)
+            except KeyError:
+                pass 
+            return
+
         # Oh boy they are - time to send the confession I guess
         embed = Embed(
             title=f"Confession Code {code.upper()}",
@@ -174,6 +220,9 @@ class Confession(Cog):
             timestamp=original_message.created_at,
             colour=randint(1, 0xffffff),
         )
+        user_ban_code = get_code(16)
+        self.confession_users[user_ban_code] = original_message.author
+        embed.set_footer(text=f",banuser {user_ban_code}")
         try:
             confessed_message = await confession_channel.send(embed=embed)
         except Exception as e:

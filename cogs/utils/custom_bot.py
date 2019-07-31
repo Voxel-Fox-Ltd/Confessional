@@ -56,6 +56,8 @@ class CustomBot(AutoShardedBot):
 
         # Store the confession channels for a guild
         self.confession_channels: Dict[str, int] = {}  # code: channel_id
+        self.banned_users = set()  # Set of tuples - (guild id, user id)
+
 
     @property
     def code_channels(self) -> Dict[int, str]:
@@ -106,6 +108,15 @@ class CustomBot(AutoShardedBot):
             logger.critical(f"Exception raised on confession_channel SELECT query: {e}")
             exit(1)
         self.confession_channels = {i['code']: i['channel_id'] for i in con_channels}
+
+        # Get banned users
+        try:
+            banned_users = await db('SELECT * FROM banned_users')
+        except Exception as e:
+            logger.critical(f"Exception raised on banned_users SELECT query: {e}")
+            exit(1)
+        for i in banned_users:
+            self.banned_users.add((i['guild_id'], i['user_id']))
 
         # Wait for the bot to cache users before continuing
         logger.debug("Waiting until ready before completing startup method.")
