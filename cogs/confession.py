@@ -6,7 +6,7 @@ from datetime import datetime as dt
 
 from asyncpg import UniqueViolationError
 from discord import Embed, DMChannel, Message, PermissionOverwrite, User
-from discord.errors import NotFound as DiscordNotFound
+from discord.errors import NotFound as DiscordNotFound, Forbidden as DiscordForbidden
 from discord.ext.commands import command, has_permissions, bot_has_permissions, Context, MissingPermissions, BotMissingPermissions
 
 from cogs.utils.custom_bot import CustomBot
@@ -62,19 +62,34 @@ class Confession(Cog):
         user_to_ban = self.confession_users.get(uuid.lower())
         if user_to_ban is None:
             await ctx.send("The ID provided doesn't point to a user. Please try again.")
+            return
         async with self.bot.database() as db:
             try:
-                await db('INSER INTO banned_users (guild_id, user_id) VALUES ($1, $2)', ctx.guild.id, user_to_ban.id)
+                await db('INSERT INTO banned_users (guild_id, user_id) VALUES ($1, $2)', ctx.guild.id, user_to_ban.id)
             except UniqueViolationError:
-                pass 
+                pass
 
         # Tell people about it
         try:
             await user_to_ban.send("You've been banned from posting confessions on the server **{ctx.guild.id}**. Your identity is still a secret. Don't worry about it too much.")
         except Exception:
             pass
+        self.bot.banned_users.add((ctx.guild.id, user_to_ban.id))
         await ctx.send("That user has been banned from sending in more confessions on your server.")
 
+
+    @command()
+    @has_permissions(manage_messages=True)
+    async def unbanuser(self, ctx:Context, user:User):
+        '''Unbans a user from messaging the confessional on your server'''
+
+        try:
+            self.bot.banned_users.remove((ctx.guild.id, user.id))
+        except Exception:
+            pass 
+        async with self.bot.database() as db:
+            await db('DELETE FROM banned_users WHERE guild_id=$1 AND user_id=$2', ctx.guild.id, user.id)
+        await ctx.send("That user has been unbanned from sending in messages, if they were even banned at all.")
 
 
     @command()
@@ -186,7 +201,7 @@ class Confession(Cog):
             return
         try:
             confession_channel = self.bot.get_channel(confession_channel_id) or await self.bot.fetch_channel(confession_channel_id)
-        except DiscordNotFound:
+        except (DiscordNotFound, DiscordForbidden):
             confession_channel = None
         if confession_channel is None:
             await channel.send(f"The code `{code_message.content}` doesn't refer to a given confession channel. Please give your confession again to be able to provide a new channel code.")
@@ -223,7 +238,7 @@ class Confession(Cog):
         )
         user_ban_code = get_code(16)
         self.confession_users[user_ban_code] = original_message.author
-        embed.set_footer(text=f",banuser {user_ban_code}")
+        embed.set_footer(text=f"x.banuser {user_ban_code}")
         try:
             confessed_message = await confession_channel.send(embed=embed)
         except Exception as e:
@@ -243,7 +258,7 @@ class Confession(Cog):
         # Log it to db
         async with self.bot.database() as db:
             await db(
-                'INSERT INTO confession_log (confession_message_id, user_id, guild_id, channel_code, channel_id, timestamp, confession) VALUES ($1, $2, $3, $4, 45, $6, $7)',
+                'INSERT INTO confession_log (confession_message_id, user_id, guild_id, channel_code, channel_id, timestamp, confession) VALUES ($1, $2, $3, $4, $5, $6, $7)',
                 confessed_message.id, 
                 original_message.author.id,
                 confession_channel.guild.id,
