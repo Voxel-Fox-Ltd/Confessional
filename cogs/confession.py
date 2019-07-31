@@ -2,6 +2,7 @@ from string import ascii_lowercase as ASCII_LOWERCASE
 from random import choices, randint
 from asyncio import TimeoutError as AsyncTimeoutError
 from typing import Dict
+from datetime import datetime as dt
 
 from asyncpg import UniqueViolationError
 from discord import Embed, DMChannel, Message, PermissionOverwrite, User
@@ -217,7 +218,7 @@ class Confession(Cog):
         embed = Embed(
             title=f"Confession Code {code.upper()}",
             description=confession,
-            timestamp=original_message.created_at,
+            timestamp=dt.utcnow(),
             colour=randint(1, 0xffffff),
         )
         user_ban_code = get_code(16)
@@ -238,6 +239,19 @@ class Confession(Cog):
         except KeyError:
             pass 
         self.log_handler.info(f"Sent confession from {original_message.author.id} to {confession_channel.id} ({code: >5}) -> {confession}")
+
+        # Log it to db
+        async with self.bot.database() as db:
+            await db(
+                'INSERT INTO confession_log (confession_message_id, user_id, guild_id, channel_code, channel_id, timestamp, confession) VALUES ($1, $2, $3, $4, 45, $6, $7)',
+                confessed_message.id, 
+                original_message.author.id,
+                confession_channel.guild.id,
+                code.lower(),
+                confession_channel.id,
+                confessed_message.created_at,
+                confession,
+            )
 
 
 def setup(bot:CustomBot):

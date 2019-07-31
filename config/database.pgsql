@@ -26,3 +26,14 @@ CREATE TABLE banned_users(
     user_id BIGINT,
     PRIMARY KEY (guild_id, user_id)
 );
+
+
+CREATE TABLE confession_log(
+    confession_message_id BIGINT PRIMARY KEY,
+    user_id BIGINT,
+    guild_id BIGINT,
+    channel_code VARCHAR(5),
+    channel_id BIGINT,
+    timestamp TIMESTAMP,
+    confession TEXT
+);
