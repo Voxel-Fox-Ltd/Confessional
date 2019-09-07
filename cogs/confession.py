@@ -216,6 +216,16 @@ class Confession(utils.Cog):
                 pass
             return
 
+        # Check the user can see the confession channel
+        member = confession_channel.guild.get_member(original_message.author.id)
+        if confession_channel.permissions_for(member).read_messages is False:
+            await channel.send(f"You're not able to read the messages that the channel `{code}` refers to.")
+            try:
+                self.currently_confessing.remove(original_message.author.id)
+            except KeyError:
+                pass
+            return
+
         # Check they're allowed to send messages to that guild
         if (confession_channel.guild.id, original_message.author.id) in self.bot.banned_users:
             await channel.send("You've been banned from sending messages in to that server :/")
@@ -238,7 +248,7 @@ class Confession(utils.Cog):
         try:
             confessed_message = await confession_channel.send(embed=embed)
         except Exception as e:
-            await channel.send(f"I encoutered the error {e} trying to send in the confession :/")
+            await channel.send(f"I encoutered the error `{e}` trying to send in the confession :/")
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
