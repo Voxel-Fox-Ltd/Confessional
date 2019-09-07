@@ -177,7 +177,7 @@ class Confession(utils.Cog):
             return
 
         # Check their channel code is real
-        if len(code_message.content) != 5 or self.bot.confession_channels.get(code_message.content.lower()) is None:
+        if self.bot.confession_channels.get(code_message.content.lower()) is None:
             await channel.send(f"The code `{code_message.content}` doesn't refer to a given confession channel. Please give your confession again to be able to provide a new channel code.")
             try:
                 self.currently_confessing.remove(original_message.author.id)

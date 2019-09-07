@@ -31,7 +31,7 @@ class HelpCommand(utils.Cog):
         """The new improved help command"""
 
         try:
-            await ctx.author.send(HELP_TEXT)
+            await ctx.author.send(HELP_TEXT.format(ctx=ctx))
         except discord.Forbidden:
             await ctx.send("I wasn't able to send you a DM :c")
             return
