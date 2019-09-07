@@ -10,7 +10,7 @@ class ChannelEvent(utils.Cog):
         self.bot = bot
 
 
-    @Cog.listener('on_guild_channel_delete')
+    @utils.Cog.listener('on_guild_channel_delete')
     async def channel_delete_listener(self, channel:discord.TextChannel):
         '''Checks to see if a tracked channel is being deleted'''
 
@@ -30,6 +30,6 @@ class ChannelEvent(utils.Cog):
         del self.bot.confession_channels[code]
 
 
-def setup(bot:CustomBot):
+def setup(bot:utils.CustomBot):
     x = ChannelEvent(bot)
     bot.add_cog(x)

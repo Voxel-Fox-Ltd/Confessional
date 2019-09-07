@@ -91,7 +91,7 @@ class Confession(utils.Cog):
     @commands.command()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
-    async def createchannel(self, ctx: Context, code:str=None):
+    async def createchannel(self, ctx:commands.Context, code:str=None):
         '''Creates a confession channel for the bot to run responses to'''
 
         # Get a code for the user
@@ -132,7 +132,7 @@ class Confession(utils.Cog):
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}")
 
 
-    @Cog.listener('on_message')
+    @utils.Cog.listener('on_message')
     async def confession_listener(self, message: discord.Message):
         '''Listens out for a message in a DM channel and assumes it's a confession'''
 
@@ -265,6 +265,6 @@ class Confession(utils.Cog):
             )
 
 
-def setup(bot:CustomBot):
+def setup(bot:utils.CustomBot):
     x = Confession(bot)
     bot.add_cog(x)

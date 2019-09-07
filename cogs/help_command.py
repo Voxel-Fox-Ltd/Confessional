@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands
 
 from cogs import utils
 
@@ -18,15 +19,15 @@ class HelpCommand(utils.Cog):
     def __init__(self, bot:utils.CustomBot):
         super().__init__(self.__class__.__name__)
         self.bot = bot
-        self.original_help_command = self.get_command("help")
-        self.remove_command("help")
+        self.original_help_command = self.bot.get_command("help")
+        self.bot.remove_command("help")
 
     def cog_unload(self):
-        self.remove_command("help")
-        self.add_command(self.original_help_command)
+        self.bot.remove_command("help")
+        self.bot.add_command(self.original_help_command)
 
-    @commands.command(name=help)
-    async def help2(self, ctx:Context):
+    @commands.command(name="help")
+    async def help2(self, ctx:commands.Context):
         """The new improved help command"""
 
         try:

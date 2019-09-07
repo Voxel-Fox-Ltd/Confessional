@@ -1,15 +1,13 @@
 from asyncio import sleep
 
-from discord import Message
-from discord.ext.commands import Context
+from discord.ext import commands
 
-from cogs.utils.custom_bot import CustomBot
-from cogs.utils.custom_cog import Cog
+from cogs import utils
 
 
-class CommandEvent(Cog):
+class CommandEvent(utils.Cog):
 
-    def __init__(self, bot:CustomBot):
+    def __init__(self, bot:utils.CustomBot):
         super().__init__(self.__class__.__name__)
         self.bot = bot
         self.logger = self.bot.loop.create_task(self.run_logger())
@@ -21,18 +19,18 @@ class CommandEvent(Cog):
         self.bot.loop.run_until_complete(self.empty_cache())
 
 
-    @Cog.listener()
-    async def on_command_completion(self, ctx:Context):
+    @utils.Cog.listener()
+    async def on_command_completion(self, ctx:commands.Context):
         self.command_cache.append(ctx)
 
 
-    @Cog.listener()
-    async def on_command_error(self, ctx:Context, error):
+    @utils.Cog.listener()
+    async def on_command_error(self, ctx:commands.Context, error):
         self.command_cache.append(ctx)
 
 
-    @Cog.listener()
-    async def on_command(self, ctx:Context):
+    @utils.Cog.listener()
+    async def on_command(self, ctx:commands.Context):
         '''Outputs command to debug log'''
 
         cog = self.bot.get_cog(ctx.command.cog_name)
@@ -65,15 +63,15 @@ class CommandEvent(Cog):
         # Copy and clear caches
         commands = self.command_cache[:]
         self.command_cache.clear()
-            
+
         # Log commands
         command_values = [[
                 ctx.guild.id if ctx.guild else None,
-                ctx.channel.id, 
-                ctx.author.id, 
+                ctx.channel.id,
+                ctx.author.id,
                 ctx.message.id,
-                ctx.message.content, 
-                ctx.command.name if ctx.command else None, 
+                ctx.message.content,
+                ctx.command.name if ctx.command else None,
                 ctx.invoked_with,
                 ctx.prefix,
                 ctx.message.created_at,
@@ -91,6 +89,6 @@ class CommandEvent(Cog):
             )
 
 
-def setup(bot:CustomBot):
+def setup(bot:utils.CustomBot):
     x = CommandEvent(bot)
     bot.add_cog(x)
