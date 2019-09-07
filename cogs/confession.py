@@ -23,39 +23,52 @@ class Confession(utils.Cog):
         self.currently_confessing = set()  # A set rather than a list because it uses a hash table
         self.confession_users: typing.Dict[str, discord.User] = {}  # uuid: User
 
-
-    async def cog_error(self, ctx:commands.Context, error):
+    async def cog_command_error(self, ctx:commands.Context, error):
         '''Handles errors for this particular cog'''
 
-        if isinstance(error, discord.MissingPermissions):
+        if isinstance(error, commands.BotMissingPermissions):
+            await ctx.send(f"I'm missing the `{error.missing_perms[0]}` permission that's required for me to run this command.")
+            return
+
+        elif isinstance(error, commands.MissingPermissions):
             if ctx.author.id in self.bot.config['owners']:
                 await ctx.reinvoke()
                 return
             await ctx.send(f"You need to have the `{error.missing_perms[0]}` permission to run this command.")
 
-        elif isinstance(error, discord.BotMissingPermissions):
-            await ctx.send(f"I'm missing the `{error.missing_perms[0]} permission required to run this command.")
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(f"You're missing the `{error.param.name}` argument, which is required to run this command.")
+            return
+
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(f"You're running this command incorrectly - {error}")
+            return
 
         raise error
-
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def banuser(self, ctx:commands.Context, uuid:str):
         '''Bans a user from being able to send in any more confessions to your server'''
 
+        try:
+            user_to_ban = await commands.MemberConverter().convert(ctx, uuid)
+        except commands.BadArgument:
+            user_to_ban = None
+
         # Make sure it's valid
-        if len(uuid) != 16:
-            await ctx.send("You've not posted a valid ID. Please try again.")
+        if user_to_ban is None and len(uuid) != 16:
+            await ctx.send("You've not posted a valid ID - please give a ban code from a confession.")
             return
 
         # Make sure it's real
-        if uuid.lower() not in self.confession_users:
+        if user_to_ban is None and uuid.lower() not in self.confession_users:
             await ctx.send("The ID provided is not one that I currently have cached. Please try again.")
             return
 
         # Get and ban em
-        user_to_ban = self.confession_users.get(uuid.lower())
+        if user_to_ban is None:
+            user_to_ban = self.confession_users.get(uuid.lower())
         if user_to_ban is None:
             await ctx.send("The ID provided doesn't point to a user. Please try again.")
             return
@@ -73,7 +86,6 @@ class Confession(utils.Cog):
         self.bot.banned_users.add((ctx.guild.id, user_to_ban.id))
         await ctx.send("That user has been banned from sending in more confessions on your server.")
 
-
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def unbanuser(self, ctx:commands.Context, user:discord.User):
@@ -86,7 +98,6 @@ class Confession(utils.Cog):
         async with self.bot.database() as db:
             await db('DELETE FROM banned_users WHERE guild_id=$1 AND user_id=$2', ctx.guild.id, user.id)
         await ctx.send("That user has been unbanned from sending in messages, if they were even banned at all.")
-
 
     @commands.command()
     @commands.has_permissions(manage_channels=True)
@@ -130,7 +141,6 @@ class Confession(utils.Cog):
 
         # Tell em it's done
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}")
-
 
     @utils.Cog.listener('on_message')
     async def confession_listener(self, message: discord.Message):
