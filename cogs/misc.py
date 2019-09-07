@@ -9,12 +9,17 @@ class Misc(utils.Cog):
         super().__init__(self.__class__.__name__)
         self.bot = bot
 
-
     @commands.command()
     async def invite(self, ctx:commands.Context):
         '''Gives you the invite for the bot'''
 
         await ctx.send(f"<{self.bot.invite_link}>")
+
+    @commands.command(aliases=['server', 'support'])
+    async def guild(self, ctx:commands.Context):
+        '''Gives you the link to the support server'''
+
+        await ctx.send(f"{self.bot.config['guild_invite']}")
 
 
 def setup(bot:utils.CustomBot):

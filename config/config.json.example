@@ -10,5 +10,6 @@
         "host": "127.0.0.1"
     },
     "presence_text": "",
-    "default_prefix": "x."
+    "default_prefix": "x.",
+    "guild_invite": ""
 }
