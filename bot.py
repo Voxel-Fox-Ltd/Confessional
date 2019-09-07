@@ -2,9 +2,7 @@ from argparse import ArgumentParser
 from warnings import filterwarnings
 import logging
 
-from aiohttp.web import Application, AppRunner, TCPSite
-from discord import Game, Status
-from discord.ext.commands import when_mentioned_or
+import discord
 
 from cogs.utils.custom_bot import CustomBot
 from cogs.utils.database import DatabaseConnection
@@ -35,8 +33,8 @@ if args.shardcount == None and (args.min or args.max):
     raise Exception("You set a min/max shard handler but no shard count")
 bot = CustomBot(
     config_file=args.config_file,
-    activity=Game(name="Reconnecting..."),
-    status=Status.dnd,
+    activity=discord.Game(name="Reconnecting..."),
+    status=discord.Status.dnd,
     case_insensitive=True,
     shard_count=args.shardcount,
     shard_ids=shard_ids,
@@ -54,7 +52,7 @@ async def on_ready():
     logger.info('Bot connected:')
     logger.info(f'\t{bot.user}')
     logger.info(f'\t{bot.user.id}')
-    
+
     logger.info("Setting activity to default")
     await bot.set_default_presence()
     logger.info('Bot loaded.')
@@ -66,7 +64,7 @@ if __name__ == '__main__':
     '''
 
     # Grab the event loop
-    loop = bot.loop 
+    loop = bot.loop
 
     # Connect the database
     logger.info("Creating database pool")
@@ -91,13 +89,9 @@ if __name__ == '__main__':
     try:
         logger.info("Running bot")
         bot.run()
-    except KeyboardInterrupt: 
+    except KeyboardInterrupt:
         pass
 
-    # We're now done running the bot, time to clean up and close
-    # if webserver:
-    #     logger.info("Closing webserver")
-    #     loop.run_until_complete(application.cleanup())
     logger.info("Closing database pool")
     loop.run_until_complete(DatabaseConnection.pool.close())
     logger.info("Closing redis pool")
