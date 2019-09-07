@@ -1,62 +1,58 @@
-from string import ascii_lowercase as ASCII_LOWERCASE
-from random import choices, randint
-from asyncio import TimeoutError as AsyncTimeoutError
-from typing import Dict
+import string
+import random
+import asyncio
+import typing
 from datetime import datetime as dt
 
-from asyncpg import UniqueViolationError
-from discord import Embed, DMChannel, Message, PermissionOverwrite, User
-from discord.errors import NotFound as DiscordNotFound, Forbidden as DiscordForbidden
-from discord.ext.commands import command, has_permissions, bot_has_permissions, Context, MissingPermissions, BotMissingPermissions
+import asyncpg
+import discord
+from discord.ext import commands
 
-from cogs.utils.custom_bot import CustomBot
-from cogs.utils.custom_cog import Cog
+from cogs import utils
 
 
-CODEDIGITS = ASCII_LOWERCASE + '0123456789'
 def get_code(n:int=5) -> str:
-    return ''.join(choices(CODEDIGITS, k=n))
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
 
-class Confession(Cog):
+class Confession(utils.Cog):
 
-    def __init__(self, bot: CustomBot):
+    def __init__(self, bot:utils.CustomBot):
         super().__init__(self.__class__.__name__)
         self.bot = bot
         self.currently_confessing = set()  # A set rather than a list because it uses a hash table
-        self.confession_users: Dict[str, User] = {}  # uuid: User
+        self.confession_users: typing.Dict[str, discord.User] = {}  # uuid: User
 
 
-    async def cog_error(self, ctx:Context, error):
+    async def cog_error(self, ctx:commands.Context, error):
         '''Handles errors for this particular cog'''
 
-        if isinstance(error, MissingPermissions):
-            error: MissingPermissions = error
+        if isinstance(error, discord.MissingPermissions):
             if ctx.author.id in self.bot.config['owners']:
-                await ctx.reinvoke() 
-                return 
+                await ctx.reinvoke()
+                return
             await ctx.send(f"You need to have the `{error.missing_perms[0]}` permission to run this command.")
-    
-        elif isinstance(error, BotMissingPermissions):
+
+        elif isinstance(error, discord.BotMissingPermissions):
             await ctx.send(f"I'm missing the `{error.missing_perms[0]} permission required to run this command.")
 
         raise error
 
 
-    @command()
-    @has_permissions(manage_messages=True)
-    async def banuser(self, ctx:Context, uuid:str):
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def banuser(self, ctx:commands.Context, uuid:str):
         '''Bans a user from being able to send in any more confessions to your server'''
 
         # Make sure it's valid
         if len(uuid) != 16:
             await ctx.send("You've not posted a valid ID. Please try again.")
-            return 
+            return
 
         # Make sure it's real
         if uuid.lower() not in self.confession_users:
             await ctx.send("The ID provided is not one that I currently have cached. Please try again.")
-            return 
+            return
 
         # Get and ban em
         user_to_ban = self.confession_users.get(uuid.lower())
@@ -66,7 +62,7 @@ class Confession(Cog):
         async with self.bot.database() as db:
             try:
                 await db('INSERT INTO banned_users (guild_id, user_id) VALUES ($1, $2)', ctx.guild.id, user_to_ban.id)
-            except UniqueViolationError:
+            except asyncpg.UniqueViolationError:
                 pass
 
         # Tell people about it
@@ -78,23 +74,23 @@ class Confession(Cog):
         await ctx.send("That user has been banned from sending in more confessions on your server.")
 
 
-    @command()
-    @has_permissions(manage_messages=True)
-    async def unbanuser(self, ctx:Context, user:User):
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def unbanuser(self, ctx:commands.Context, user:discord.User):
         '''Unbans a user from messaging the confessional on your server'''
 
         try:
             self.bot.banned_users.remove((ctx.guild.id, user.id))
         except Exception:
-            pass 
+            pass
         async with self.bot.database() as db:
             await db('DELETE FROM banned_users WHERE guild_id=$1 AND user_id=$2', ctx.guild.id, user.id)
         await ctx.send("That user has been unbanned from sending in messages, if they were even banned at all.")
 
 
-    @command()
-    @has_permissions(manage_channels=True)
-    @bot_has_permissions(manage_channels=True)
+    @commands.command()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def createchannel(self, ctx: Context, code:str=None):
         '''Creates a confession channel for the bot to run responses to'''
 
@@ -102,7 +98,7 @@ class Confession(Cog):
         if code:
             if len(code) > 5:
                 await ctx.send("The maximum length for your channel code is 5 characters.")
-                return 
+                return
             if code.lower() in self.bot.confession_channels:
                 await ctx.send(f"The code `{code}` is already in use. Sorry :/")
                 return
@@ -115,8 +111,8 @@ class Confession(Cog):
 
         # Create a channel with that name
         overwrites = {
-            ctx.guild.default_role: PermissionOverwrite(read_messages=True, send_messages=False),
-            ctx.guild.me: PermissionOverwrite(send_messages=True, embed_links=True),
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+            ctx.guild.me: discord.PermissionOverwrite(send_messages=True, embed_links=True),
         }
         channel = await ctx.guild.create_text_channel(
             f"confessional-{code}",
@@ -135,15 +131,15 @@ class Confession(Cog):
         # Tell em it's done
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}")
 
-    
+
     @Cog.listener('on_message')
-    async def confession_listener(self, message: Message):
+    async def confession_listener(self, message: discord.Message):
         '''Listens out for a message in a DM channel and assumes it's a confession'''
 
         # Handle guild channels
-        if not isinstance(message.channel, DMChannel):
+        if not isinstance(message.channel, discord.DMChannel):
             return
-        
+
         # Handle bots (me lol)
         if message.author.bot:
             return
@@ -153,7 +149,7 @@ class Confession(Cog):
             return
 
         # Set up this name error lol
-        channel = message.channel 
+        channel = message.channel
         original_message = message
 
         # Assume they're just sending a message - whereabouts do they want to send it
@@ -171,13 +167,13 @@ class Confession(Cog):
         # Ask for a channel code
         await channel.send("What's the code for the channel you want to confess to?")
         try:
-            code_message = await self.bot.wait_for("message", check=lambda m: isinstance(m.channel, DMChannel) and m.author.id == original_message.author.id, timeout=120)
-        except AsyncTimeoutError:
+            code_message = await self.bot.wait_for("message", check=lambda m: isinstance(m.channel, discord.DMChannel) and m.author.id == original_message.author.id, timeout=120)
+        except asyncio.TimeoutError:
             await channel.send("The timer for you to give a channel code has timed out. Please give your confession again to be able to provide another.")
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
 
         # Check their channel code is real
@@ -186,7 +182,7 @@ class Confession(Cog):
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
         code = code_message.content.lower()
 
@@ -197,18 +193,18 @@ class Confession(Cog):
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
         try:
             confession_channel = self.bot.get_channel(confession_channel_id) or await self.bot.fetch_channel(confession_channel_id)
-        except (DiscordNotFound, DiscordForbidden):
+        except (discord.NotFound, discord.Forbidden):
             confession_channel = None
         if confession_channel is None:
             await channel.send(f"The code `{code_message.content}` doesn't refer to a given confession channel. Please give your confession again to be able to provide a new channel code.")
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
 
         # Check the user is in the guild for the channel
@@ -217,7 +213,7 @@ class Confession(Cog):
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
 
         # Check they're allowed to send messages to that guild
@@ -226,15 +222,15 @@ class Confession(Cog):
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
 
         # Oh boy they are - time to send the confession I guess
-        embed = Embed(
+        embed = discord.Embed(
             title=f"Confession Code {code.upper()}",
             description=confession,
             timestamp=dt.utcnow(),
-            colour=randint(1, 0xffffff),
+            colour=random.randint(1, 0xffffff),
         )
         user_ban_code = get_code(16)
         self.confession_users[user_ban_code] = original_message.author
@@ -246,20 +242,20 @@ class Confession(Cog):
             try:
                 self.currently_confessing.remove(original_message.author.id)
             except KeyError:
-                pass 
+                pass
             return
         await channel.send(f"I sucessfully sent in your confession!\n{confessed_message.jump_url}")
         try:
             self.currently_confessing.remove(original_message.author.id)
         except KeyError:
-            pass 
+            pass
         self.log_handler.info(f"Sent confession from {original_message.author.id} to {confession_channel.id} ({code: >5}) -> {confession}")
 
         # Log it to db
         async with self.bot.database() as db:
             await db(
                 'INSERT INTO confession_log (confession_message_id, user_id, guild_id, channel_code, channel_id, timestamp, confession) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                confessed_message.id, 
+                confessed_message.id,
                 original_message.author.id,
                 confession_channel.guild.id,
                 code.lower(),

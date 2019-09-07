@@ -1,23 +1,22 @@
-from discord.ext.commands import command, Context
+from discord.ext import commands
 
-from cogs.utils.custom_bot import CustomBot
-from cogs.utils.custom_cog import Cog
+from cogs import utils
 
 
-class Misc(Cog):
+class Misc(utils.Cog):
 
-    def __init__(self, bot:CustomBot):
+    def __init__(self, bot:utils.CustomBot):
         super().__init__(self.__class__.__name__)
         self.bot = bot
 
-    
-    @command()
-    async def invite(self, ctx:Context):
+
+    @commands.command()
+    async def invite(self, ctx:commands.Context):
         '''Gives you the invite for the bot'''
 
         await ctx.send(f"<{self.bot.invite_link}>")
 
 
-def setup(bot:CustomBot):
+def setup(bot:utils.CustomBot):
     x = Misc(bot)
     bot.add_cog(x)

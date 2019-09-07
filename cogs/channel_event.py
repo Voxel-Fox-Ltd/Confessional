@@ -1,29 +1,28 @@
-from discord import TextChannel
+import discord
 
-from cogs.utils.custom_bot import CustomBot
-from cogs.utils.custom_cog import Cog 
+from cogs import utils
 
 
-class ChannelEvent(Cog):
+class ChannelEvent(utils.Cog):
 
-    def __init__(self, bot:CustomBot):
+    def __init__(self, bot:utils.CustomBot):
         super().__init__(self.__class__.__name__)
-        self.bot = bot 
+        self.bot = bot
 
 
     @Cog.listener('on_guild_channel_delete')
-    async def channel_delete_listener(self, channel):
+    async def channel_delete_listener(self, channel:discord.TextChannel):
         '''Checks to see if a tracked channel is being deleted'''
 
         # Check for text channel
-        if not isinstance(channel, TextChannel):
-            return 
+        if not isinstance(channel, discord.TextChannel):
+            return
 
         # Check for existing
         code = self.bot.code_channels.get(channel.id)
         if code is None:
-            return 
-        
+            return
+
         # It exists
         self.log_handler.info(f"Deleting inaccessible channel with ID {channel.id} and code {code.upper()}")
         async with self.bot.database() as db:
