@@ -37,3 +37,10 @@ CREATE TABLE confession_log(
     timestamp TIMESTAMP,
     confession TEXT
 );
+
+CREATE TABLE prefix(
+    guildID bigint primary key,
+    prefix VARCHAR(50)
+);
+
+
