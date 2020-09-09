@@ -21,6 +21,13 @@ class Misc(utils.Cog):
 
         await ctx.send(f"{self.bot.config['guild_invite']}")
 
+    @commands.command(aliases=['github'])
+    async def git(self, ctx:commands.Context):
+        '''Gives you the link to bot's GitHub'''
+
+        await ctx.send(f"<https://github.com/4Kaylum/Confession>")                   
+                       
+                       
 
 def setup(bot:utils.CustomBot):
     x = Misc(bot)
