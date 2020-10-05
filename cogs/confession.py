@@ -80,7 +80,7 @@ class Confession(utils.Cog):
 
         # Tell people about it
         try:
-            await user_to_ban.send("You've been banned from posting confessions on the server **{ctx.guild.id}**. Your identity is still a secret. Don't worry about it too much.")
+            await user_to_ban.send(f"You've been banned from posting confessions on the server **{ctx.guild.name}**. Your identity is still a secret. Don't worry about it too much.")
         except Exception:
             pass
         self.bot.banned_users.add((ctx.guild.id, user_to_ban.id))
