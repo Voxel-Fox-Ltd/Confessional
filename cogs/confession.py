@@ -186,7 +186,12 @@ class Confession(utils.Cog):
         self.logger.info(f"Channel code from {message.author.id} exists as a channel")
 
         # Check the user is in the guild for the channel
-        if original_message.author.id not in confession_channel.guild._members:
+        try:
+            guild = self.bot.get_guild(confession_channel.guild.id) or await self.bot.fetch_guild(confession_channel.guild.id)
+            member = guild.get_member(original_message.author.id) or await guild.fetch_member(original_message.author.id)
+        except discord.HTTPException:
+            member = None
+        if not member:
             try:
                 await channel.send(f"You're not in the guild that the channel code **{code_message.content.upper()}** refers to. Please give your confession again and provide an alternative channel code.")
             except Exception:
@@ -200,7 +205,6 @@ class Confession(utils.Cog):
         self.logger.info(f"Channel code from {message.author.id} has user in guild")
 
         # Check the user can see the confession channel
-        member = confession_channel.guild.get_member(original_message.author.id)
         if confession_channel.permissions_for(member).read_messages is False:
             try:
                 await channel.send(f"You're not able to read the messages that the channel **{code_message.content.upper()}** refers to. Please give your confession again and provide an alternative channel code.")
