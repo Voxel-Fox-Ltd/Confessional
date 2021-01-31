@@ -113,11 +113,14 @@ class Confession(utils.Cog):
             async with self.bot.database() as db:
                 posted_message = await db("SELECT * FROM confession_log WHERE confession_message_id=$1", reference.message_id)
             if not posted_message:
+                self.logger.info("Replied message is not a confession")
                 return
+            self.logger.info("it IS a confession")
             try:
                 confessed_user = self.bot.fetch_user(posted_message[0]['user_id'])
                 await confessed_user.send(f"Your confession in **{message.guild.name}** has been replied to!\n{message.jump_url}")
             except discord.HTTPException:
+                self.logger.info("Could not send message to author")
                 pass
             return
 
