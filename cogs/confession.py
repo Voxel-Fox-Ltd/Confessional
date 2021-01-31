@@ -102,11 +102,25 @@ class Confession(utils.Cog):
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
 
     @utils.Cog.listener('on_message')
-    async def confession_listener(self, message: discord.Message):
+    async def confession_listener(self, message:discord.Message):
         """Listens out for a message in a DM channel and assumes it's a confession"""
 
         # Handle guild channels
         if not isinstance(message.channel, discord.DMChannel):
+            reference = message.reference
+            if not reference:
+                return
+            async with self.bot.database() as db:
+                posted_message = await db("SELECT * FROM confession_log WHERE message_id=$1", reference.message_id)
+            if not posted_message:
+                return
+            confessed_user = self.bot.get_user(posted_message['user_id'])
+            if not confessed_user:
+                return
+            try:
+                await confessed_user.send(f"Your confession in **{message.guild.name}** has been replied to!\n{message.jump_url}")
+            except discord.HTTPException:
+                pass
             return
 
         # Handle bots (me lol)
