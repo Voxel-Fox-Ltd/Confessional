@@ -114,10 +114,8 @@ class Confession(utils.Cog):
                 posted_message = await db("SELECT * FROM confession_log WHERE message_id=$1", reference.message_id)
             if not posted_message:
                 return
-            confessed_user = self.bot.get_user(posted_message[0]['user_id'])
-            if not confessed_user:
-                return
             try:
+                confessed_user = self.bot.fetch_user(posted_message[0]['user_id'])
                 await confessed_user.send(f"Your confession in **{message.guild.name}** has been replied to!\n{message.jump_url}")
             except discord.HTTPException:
                 pass
