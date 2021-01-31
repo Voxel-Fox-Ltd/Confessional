@@ -114,7 +114,7 @@ class Confession(utils.Cog):
                 posted_message = await db("SELECT * FROM confession_log WHERE message_id=$1", reference.message_id)
             if not posted_message:
                 return
-            confessed_user = self.bot.get_user(posted_message['user_id'])
+            confessed_user = self.bot.get_user(posted_message[0]['user_id'])
             if not confessed_user:
                 return
             try:
