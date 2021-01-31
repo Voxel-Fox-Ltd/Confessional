@@ -78,10 +78,11 @@ class Confession(utils.Cog):
             if code:
                 if await db("SELECT * FROM confession_channel WHERE code=$1", code):
                     return await ctx.send(f"The code **{code.upper()}** is already in use.")
-            while True:
-                code = get_code()
-                if not await db("SELECT * FROM confession_channel WHERE code=$1", code):
-                    break
+            else:
+                while True:
+                    code = get_code()
+                    if not await db("SELECT * FROM confession_channel WHERE code=$1", code):
+                        break
 
         # Create a channel with that name
         overwrites = {
