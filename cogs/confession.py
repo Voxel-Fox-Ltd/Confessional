@@ -111,7 +111,7 @@ class Confession(utils.Cog):
             if not reference:
                 return
             async with self.bot.database() as db:
-                posted_message = await db("SELECT * FROM confession_log WHERE message_id=$1", reference.message_id)
+                posted_message = await db("SELECT * FROM confession_log WHERE confession_message_id=$1", reference.message_id)
             if not posted_message:
                 return
             try:
