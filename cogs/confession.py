@@ -20,6 +20,7 @@ class Confession(utils.Cog):
 
     @utils.command()
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def banuser(self, ctx:utils.Context, uuid:str):
         """Bans a user from being able to send in any more confessions to your server"""
 
@@ -54,6 +55,7 @@ class Confession(utils.Cog):
 
     @utils.command()
     @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
     async def unbanuser(self, ctx:utils.Context, user_id:utils.converters.UserID):
         """Unbans a user from messaging the confessional on your server"""
 
@@ -64,6 +66,7 @@ class Confession(utils.Cog):
     @utils.command()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
+    @commands.guild_only()
     async def createchannel(self, ctx:utils.Context, code:str=None):
         """Creates a confession channel for the bot to run responses to"""
 
@@ -100,6 +103,40 @@ class Confession(utils.Cog):
         async with self.bot.database() as db:
             await db("INSERT INTO confession_channel VALUES ($1, $2)", code, channel.id)
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
+
+    @utils.command()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_guild_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def setchannel(self, ctx:utils.Context, channel:discord.TextChannel, code:str=None):
+        """Sets a confession channel for the bot to run responses to"""
+
+        # Get a code for the user
+        if code:
+            if len(code) > 5:
+                return await ctx.send("The maximum length for your channel code is 5 characters.")
+            code = code.lower()
+
+        # Check their code is valid, or provide a new one
+        async with self.bot.database() as db:
+            if code:
+                if await db("SELECT * FROM confession_channel WHERE code=$1", code):
+                    return await ctx.send(f"The code **{code.upper()}** is already in use.")
+            else:
+                while True:
+                    code = get_code()
+                    if not await db("SELECT * FROM confession_channel WHERE code=$1", code):
+                        break
+
+        # See if we can send messages there
+        me = await ctx.guild.fetch_member(self.bot.user.id)
+        if not channel.permissions_for(me).send_messages:
+            return await ctx.send("I don't have permission to send messages into that channel! Please fix this and try running the command again.")
+
+        # And done
+        async with self.bot.database() as db:
+            await db("INSERT INTO confession_channel VALUES ($1, $2)", code, channel.id)
+        await ctx.send(f"Your new confessional channel has been set in {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
 
     @utils.Cog.listener('on_message')
     async def confession_listener(self, message:discord.Message):
