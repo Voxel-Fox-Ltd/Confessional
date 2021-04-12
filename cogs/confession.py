@@ -304,6 +304,7 @@ class Confession(utils.Cog):
                 confession = re.sub(
                     r"https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})$",
                     "",
+                    confession,
                     flags=re.MULTILINE | re.DOTALL | re.IGNORECASE,
                 )
             except discord.HTTPException:
@@ -320,6 +321,7 @@ class Confession(utils.Cog):
                     confession = re.sub(
                         r"^https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})",
                         "",
+                        confession,
                         flags=re.MULTILINE | re.DOTALL | re.IGNORECASE,
                     )
                 except discord.HTTPException:
