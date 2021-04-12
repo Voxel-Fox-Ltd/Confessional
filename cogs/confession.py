@@ -1,6 +1,7 @@
 import string
 import random
 import asyncio
+import re
 from datetime import datetime as dt
 
 import discord
@@ -289,6 +290,42 @@ class Confession(utils.Cog):
             return
         self.logger.info(f"Channel code from {message.author.id} has user unbanned")
 
+        # See if this new confession is a reply to another confession
+        confession = confession.strip()
+        reply_message = None
+        end_match = re.search(
+            r"https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})$",
+            confession,
+            re.MULTILINE | re.DOTALL | re.IGNORECASE,
+        )
+        if end_match:
+            try:
+                reply_message = await confession_channel.fetch_message(int(end_match.group("message")))
+                confession = re.sub(
+                    r"https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})$",
+                    "",
+                    flags=re.MULTILINE | re.DOTALL | re.IGNORECASE,
+                )
+            except discord.HTTPException:
+                pass
+        if reply_message is None:
+            end_match = re.search(
+                r"^https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})",
+                confession,
+                re.MULTILINE | re.DOTALL | re.IGNORECASE,
+            )
+            if end_match:
+                try:
+                    reply_message = await confession_channel.fetch_message(int(end_match.group("message")))
+                    confession = re.sub(
+                        r"^https?:\/\/(?:(?:canary|ptb)?\.)?discord(?:app)?\.com\/channels\/(?P<guild>\d{16,23})\/(?P<channel>\d{16,23})\/(?P<message>\d{16,23})",
+                        "",
+                        flags=re.MULTILINE | re.DOTALL | re.IGNORECASE,
+                    )
+                except discord.HTTPException:
+                    pass
+        confession = confession.strip()
+
         # Make the embed to send
         embed = utils.Embed(
             title=f"Confession Code {code_message.content.upper()}",
@@ -301,7 +338,7 @@ class Confession(utils.Cog):
 
         # Try and send the confession
         try:
-            confessed_message = await confession_channel.send(embed=embed)
+            confessed_message = await confession_channel.send(embed=embed, reference=reply_message)
         except Exception as e:
             await channel.send(f"I encoutered the error `{e}` trying to send in the confession :/")
             try:
