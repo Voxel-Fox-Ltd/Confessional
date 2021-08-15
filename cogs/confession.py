@@ -152,7 +152,7 @@ class Confession(vbu.Cog):
         await ctx.send(f"Your new confessional channel has been set in {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
 
     @vbu.command()
-    @vbu.checks.slash_command_only()
+    @vbu.checks.is_slash_command()
     async def confess(self, ctx: vbu.Context, confession_channel: discord.TextChannel, *, confession: str):
         """
         Send a message over to a confession channel.
