@@ -385,7 +385,11 @@ class Confession(vbu.Cog):
                 user_is_banned = True
         if user_is_banned:
             try:
-                await response_channel.send("You've been banned from sending messages in to that server :/")
+                await response_channel.send(
+                    "You've been banned from sending messages in to that server :/",
+                    wait=False,
+                    ephemeral=True,
+                )
             except Exception:
                 pass
             try:
@@ -460,14 +464,22 @@ class Confession(vbu.Cog):
         try:
             confessed_message = await confession_channel.send(embed=embed, reference=reply_message)
         except Exception as e:
-            await response_channel.send(f"I encoutered the error `{e}` trying to send in the confession :/")
+            await response_channel.send(
+                f"I encoutered the error `{e}` trying to send in the confession :/",
+                wait=False,
+                ephemeral=True,
+            )
             try:
                 self.currently_confessing.remove(author.id)
             except KeyError:
                 pass
             self.logger.info(f"Invalid send to channel - {e}")
             return
-        await response_channel.send(f"I sucessfully sent in your confession!\n{confessed_message.jump_url}")
+        await response_channel.send(
+            f"I sucessfully sent in your confession!\n{confessed_message.jump_url}",
+            wait=False,
+            ephemeral=True,
+        )
         try:
             self.currently_confessing.remove(author.id)
         except KeyError:
