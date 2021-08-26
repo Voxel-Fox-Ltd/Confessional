@@ -248,6 +248,10 @@ class Confession(vbu.Cog):
             confession=confession,
             confession_code=code_message.content,
         )
+        try:
+            self.currently_confessing.remove(message.author.id)
+        except KeyError:
+            pass
 
     async def send_confession(
             self, response_channel: discord.abc.Messageable, author: discord.User, confession: str,
@@ -467,7 +471,7 @@ class Confession(vbu.Cog):
             await response_channel.send(
                 f"I encoutered the error `{e}` trying to send in the confession :/",
                 wait=False,
-                ephemeral=True,
+                ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
             )
             try:
                 self.currently_confessing.remove(author.id)
@@ -478,7 +482,7 @@ class Confession(vbu.Cog):
         await response_channel.send(
             f"I sucessfully sent in your confession!\n{confessed_message.jump_url}",
             wait=False,
-            ephemeral=True,
+            ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
         )
         try:
             self.currently_confessing.remove(author.id)
