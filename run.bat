@@ -1,1 +1,1 @@
-py -m voxelbotutils .
+vbu run-bot .
