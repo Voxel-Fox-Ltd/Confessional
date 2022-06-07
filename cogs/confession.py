@@ -20,7 +20,17 @@ class Confession(vbu.Cog):
         super().__init__(bot)
         self.currently_confessing = set()  # A set rather than a list because it uses a hash table
 
-    @vbu.command()
+    @commands.command(name="banuser",
+        application_command_meta=commands.ApplicationCommandMeta(
+            options=[
+                discord.ApplicationCommandOption(
+                    required=True,
+                    name="uuid",
+                    type=discord.ApplicationCommandOptionType.string,
+                    description="User's UUID",
+                )
+            ]
+        ))
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def banuser(self, ctx: vbu.Context, uuid: str):
@@ -57,7 +67,17 @@ class Confession(vbu.Cog):
             pass
         await ctx.send("That user has been banned from sending in more confessions on your server.")
 
-    @vbu.command()
+    @commands.command(name="unbanuser",
+        application_command_meta=commands.ApplicationCommandMeta(
+            options=[
+                discord.ApplicationCommandOption(
+                    required=True,
+                    name="user_id",
+                    type=discord.ApplicationCommandOptionType.user,
+                    description="User's Discord ID",
+                )
+            ]
+        ))
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def unbanuser(self, ctx: vbu.Context, user_id: vbu.converters.UserID):
@@ -72,7 +92,17 @@ class Confession(vbu.Cog):
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-    @vbu.command()
+    @commands.command(name="createchannel",
+        application_command_meta=commands.ApplicationCommandMeta(
+            options=[
+                discord.ApplicationCommandOption(
+                    required=False,
+                    name="code",
+                    type=discord.ApplicationCommandOptionType.string,
+                    description="Channel confessional code",
+                )
+            ]
+        ))
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     @commands.guild_only()
@@ -115,11 +145,27 @@ class Confession(vbu.Cog):
             await db("INSERT INTO confession_channel VALUES ($1, $2)", code, channel.id)
         await ctx.send(f"Your new confessional channel has been created over at {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
 
-    @vbu.command()
+    @commands.command(name="setchannel",
+        application_command_meta=commands.ApplicationCommandMeta(
+            options=[
+                discord.ApplicationCommandOption(
+                    required=False,
+                    name="channel",
+                    type=discord.ApplicationCommandOptionType.channel,
+                    description="Channel to send confessions",
+                ),
+                discord.ApplicationCommandOption(
+                    required=False,
+                    name="code",
+                    type=discord.ApplicationCommandOptionType.string,
+                    description="Channel confessional code",
+                )
+            ]
+        ))
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     @commands.guild_only()
-    async def setchannel(self, ctx: vbu.Context, channel: discord.TextChannel, code: str = None):
+    async def setchannel(self, ctx: vbu.Context, channel: discord.TextChannel = None, code: str = None):
         """
         Sets a confession channel for the bot to run responses to.
         """
@@ -140,6 +186,10 @@ class Confession(vbu.Cog):
                     code = get_code()
                     if not await db("SELECT * FROM confession_channel WHERE code=$1", code):
                         break
+        
+        # Check if channel is specificed
+        if channel==None:
+            channel=ctx.channel
 
         # See if we can send messages there
         me = await ctx.guild.fetch_member(self.bot.user.id)
@@ -151,8 +201,23 @@ class Confession(vbu.Cog):
             await db("INSERT INTO confession_channel VALUES ($1, $2)", code, channel.id)
         await ctx.send(f"Your new confessional channel has been set in {channel.mention}! Just DM me your confession, give the channel code **{code.upper()}**, and that'll be that!")
 
-    @vbu.command()
-    @vbu.checks.is_slash_command()
+    @commands.command(name="confess",
+        application_command_meta=commands.ApplicationCommandMeta(
+            options=[
+                discord.ApplicationCommandOption(
+                    required=True,
+                    name="confession_channel",
+                    type=discord.ApplicationCommandOptionType.channel,
+                    description="Channel to send confessions",
+                ),
+                discord.ApplicationCommandOption(
+                    required=True,
+                    name="confession",
+                    type=discord.ApplicationCommandOptionType.string,
+                    description="confession to send",
+                )
+            ]
+        ))
     async def confess(self, ctx: vbu.Context, confession_channel: discord.TextChannel, *, confession: str):
         """
         Send a message over to a confession channel.
@@ -203,14 +268,10 @@ class Confession(vbu.Cog):
         if len(confession) > 1000:
             return await message.channel.send(
                 "Your confession can only be 1000 characters - please shorten it and try again.",
-                wait=False,
-                ephemeral=True,
             )
         elif message.attachments:
             return await message.channel.send(
                 "I don't support sending images right now.",
-                wait=False,
-                ephemeral=True,
             )
 
         # Okay it should be alright - add em to the cache
@@ -229,8 +290,6 @@ class Confession(vbu.Cog):
             try:
                 await message.channel.send(
                     "The timer for you to give a channel code has timed out. Please give your confession again to be able to provide another.",
-                    wait=False,
-                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -284,14 +343,10 @@ class Confession(vbu.Cog):
                             f"The code **{confession_code.upper()}** doesn't refer to a given confession channel. "
                             "Please give your confession again to be able to provide a new channel code."
                         ),
-                        wait=False,
-                        ephemeral=True,
                     )
                 elif isinstance(confession_code, discord.TextChannel):
                     await response_channel.send(
                         f"The channel **{confession_code.mention}** doesn't refer to a given confession channel.",
-                        wait=False,
-                        ephemeral=True,
                     )
             except Exception:
                 pass
@@ -316,8 +371,6 @@ class Confession(vbu.Cog):
                             f"The code `{confession_code.content}` doesn't refer to a given confession channel. "
                             "Please give your confession again to be able to provide a new channel code."
                         ),
-                        wait=False,
-                        ephemeral=True,
                     )
                 except Exception:
                     pass
@@ -345,8 +398,6 @@ class Confession(vbu.Cog):
                             f"You're not in the guild that the channel code **{confession_code.upper()}** refers to. "
                             "Please give your confession again and provide an alternative channel code."
                         ),
-                        wait=False,
-                        ephemeral=True,
                     )
                 except Exception:
                     pass
@@ -369,8 +420,6 @@ class Confession(vbu.Cog):
                         f"You're not able to read the messages that the channel **{confession_code.upper()}** refers to. "
                         "Please give your confession again and provide an alternative channel code."
                     ),
-                    wait=False,
-                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -391,8 +440,6 @@ class Confession(vbu.Cog):
             try:
                 await response_channel.send(
                     "You've been banned from sending messages in to that server :/",
-                    wait=False,
-                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -470,8 +517,6 @@ class Confession(vbu.Cog):
         except Exception as e:
             await response_channel.send(
                 f"I encoutered the error `{e}` trying to send in the confession :/",
-                wait=False,
-                ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
             )
             try:
                 self.currently_confessing.remove(author.id)
@@ -481,8 +526,6 @@ class Confession(vbu.Cog):
             return
         await response_channel.send(
             f"I sucessfully sent in your confession!\n{confessed_message.jump_url}",
-            wait=False,
-            ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
         )
         try:
             self.currently_confessing.remove(author.id)
@@ -501,7 +544,7 @@ class Confession(vbu.Cog):
                 ($1, $2, $3, $4, $5, $6, $7, $8)""",
                 confessed_message.id, author.id, confession_channel.guild.id,
                 confession_channel_id_rows[0]['code'].lower(), confession_channel.id,
-                confessed_message.created_at, confession, user_ban_code,
+                discord.utils.naive_dt(confessed_message.created_at), confession, user_ban_code,
             )
 
 
