@@ -268,10 +268,12 @@ class Confession(vbu.Cog):
         if len(confession) > 1000:
             return await message.channel.send(
                 "Your confession can only be 1000 characters - please shorten it and try again.",
+                ephemeral=True,
             )
         elif message.attachments:
             return await message.channel.send(
                 "I don't support sending images right now.",
+                ephemeral=True,
             )
 
         # Okay it should be alright - add em to the cache
@@ -290,6 +292,7 @@ class Confession(vbu.Cog):
             try:
                 await message.channel.send(
                     "The timer for you to give a channel code has timed out. Please give your confession again to be able to provide another.",
+                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -343,10 +346,12 @@ class Confession(vbu.Cog):
                             f"The code **{confession_code.upper()}** doesn't refer to a given confession channel. "
                             "Please give your confession again to be able to provide a new channel code."
                         ),
+                        ephemeral=True,
                     )
                 elif isinstance(confession_code, discord.TextChannel):
                     await response_channel.send(
                         f"The channel **{confession_code.mention}** doesn't refer to a given confession channel.",
+                        ephemeral=True,
                     )
             except Exception:
                 pass
@@ -371,6 +376,7 @@ class Confession(vbu.Cog):
                             f"The code `{confession_code.content}` doesn't refer to a given confession channel. "
                             "Please give your confession again to be able to provide a new channel code."
                         ),
+                        ephemeral=True,
                     )
                 except Exception:
                     pass
@@ -398,6 +404,7 @@ class Confession(vbu.Cog):
                             f"You're not in the guild that the channel code **{confession_code.upper()}** refers to. "
                             "Please give your confession again and provide an alternative channel code."
                         ),
+                        ephemeral=True,
                     )
                 except Exception:
                     pass
@@ -420,6 +427,7 @@ class Confession(vbu.Cog):
                         f"You're not able to read the messages that the channel **{confession_code.upper()}** refers to. "
                         "Please give your confession again and provide an alternative channel code."
                     ),
+                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -440,6 +448,7 @@ class Confession(vbu.Cog):
             try:
                 await response_channel.send(
                     "You've been banned from sending messages in to that server :/",
+                    ephemeral=True,
                 )
             except Exception:
                 pass
@@ -517,6 +526,7 @@ class Confession(vbu.Cog):
         except Exception as e:
             await response_channel.send(
                 f"I encoutered the error `{e}` trying to send in the confession :/",
+                ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
             )
             try:
                 self.currently_confessing.remove(author.id)
@@ -526,6 +536,7 @@ class Confession(vbu.Cog):
             return
         await response_channel.send(
             f"I sucessfully sent in your confession!\n{confessed_message.jump_url}",
+            ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
         )
         try:
             self.currently_confessing.remove(author.id)
