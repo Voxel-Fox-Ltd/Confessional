@@ -520,13 +520,20 @@ class Confession(vbu.Cog):
         user_ban_code = get_code(16)
         embed.set_footer(text=f"/banuser {user_ban_code}")
 
+        #Ephemeral? I hadly know her hahahahahahahahahahahahahahaah
+        kwargs = {
+        "ephemeral": hasattr(response_channel, "interaction"),
+        }
+        if not kwargs['ephemeral']:
+            kwargs.pop("ephemeral")
+        
         # Try and send the confession
         try:
             confessed_message = await confession_channel.send(embed=embed, reference=reply_message)
         except Exception as e:
             await response_channel.send(
                 f"I encoutered the error `{e}` trying to send in the confession :/",
-                ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
+                **kwargs,
             )
             try:
                 self.currently_confessing.remove(author.id)
@@ -536,7 +543,7 @@ class Confession(vbu.Cog):
             return
         await response_channel.send(
             f"I sucessfully sent in your confession!\n{confessed_message.jump_url}",
-            ephemeral=not isinstance(response_channel, (discord.DMChannel, discord.TextChannel)),
+            **kwargs,
         )
         try:
             self.currently_confessing.remove(author.id)
