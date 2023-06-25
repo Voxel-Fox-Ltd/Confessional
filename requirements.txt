@@ -1,1 +1,3 @@
-voxelbotutils>=0.6,<0.7
+novus
+asyncpg
+pyyaml
