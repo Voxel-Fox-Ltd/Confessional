@@ -186,8 +186,7 @@ class Confession(client.Plugin):
             raise AssertionError("This literally isn't possible")
 
         # Create a channel with that name
-        me = ctx.state.cache.user
-        assert me
+        me = await ctx.state.user.get_current_user()
         overwrites = [
             n.PermissionOverwrite(
                 default_role.id,
