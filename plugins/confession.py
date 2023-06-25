@@ -240,6 +240,13 @@ class Confession(client.Plugin):
                 name="channel",
                 type=n.ApplicationOptionType.channel,
                 description="The channel that you want to make into a confession channel.",
+                channel_types=[
+                    n.ChannelType.guild_text,
+                    n.ChannelType.announcement_thread,
+                    n.ChannelType.guild_announcement,
+                    n.ChannelType.guild_voice,
+                    n.ChannelType.public_thread,
+                ],
             ),
         ],
         default_member_permissions=n.Permissions(manage_guild=True),
@@ -298,6 +305,13 @@ class Confession(client.Plugin):
                 name="channel",
                 type=n.ApplicationOptionType.channel,
                 description="The channel that you want to confess into.",
+                channel_types=[
+                    n.ChannelType.guild_text,
+                    n.ChannelType.announcement_thread,
+                    n.ChannelType.guild_announcement,
+                    n.ChannelType.guild_voice,
+                    n.ChannelType.public_thread,
+                ],
             ),
             n.ApplicationCommandOption(
                 name="confession",
@@ -331,6 +345,11 @@ class Confession(client.Plugin):
                 """,
                 channel.id,
             )
+            if not confession_channel_id_rows:
+                return await ctx.send(
+                    "That is not set up as a confession channel.",
+                    ephemeral=True,
+                )
             banned_user_rows = await conn.fetch(
                 """
                 SELECT
