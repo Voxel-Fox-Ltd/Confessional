@@ -288,7 +288,7 @@ class Confession(client.Plugin):
     async def channel_set(
             self,
             ctx: n.types.CommandI,
-            channel: n.TextChannel):
+            channel: n.Channel):
         """
         Sets a confession channel for the bot to run responses to.
         """
