@@ -118,8 +118,7 @@ class Confession(client.Plugin):
             message_id: str
         ):
         """
-        Sends a copyable ban command for a message sent by Confessional in the
-        confessions channel.
+        Sends a copyable ban command for a confession in the confessions channel.
         """
         assert ctx.channel # No DMs
         
