@@ -358,7 +358,7 @@ class Confession(client.Plugin):
     async def confess(
             self,
             ctx: n.types.CommandI,
-            channel: n.TextChannel,
+            channel: n.Channel,
             confession: str):
         """
         Send a message over to a confession channel.
