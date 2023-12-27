@@ -40,13 +40,13 @@ class Confession(client.Plugin):
         elif user.startswith("@") and ctx.data.resolved.members:
             user_to_ban = list(ctx.data.resolved.members.values())[0]
         else:
-            try:
-                UUID(user)
-            except ValueError:
-                return await ctx.send(
-                    "That is not a confession ID, user ID, or user ping.",
-                    ephemeral=True,
-                )
+            # try:
+            #     UUID(user)
+            # except ValueError:
+            #     return await ctx.send(
+            #         "That is not a confession ID, user ID, or user ping.",
+            #         ephemeral=True,
+            #     )
             async with db.Database.acquire() as conn:
                 data = await conn.fetch(
                     """
@@ -61,12 +61,14 @@ class Confession(client.Plugin):
                     user,
                     ctx.guild.id,
                 )
-                if not data:
+                if not data and not user_to_ban:
                     return await ctx.send(
-                        "The ID provided doesn't seem to exist.",
+                        "The ID provided doesn't seem to exist and no user was found.",
                         ephemeral=True,
                     )
                 user_to_ban = n.Object(data[0]['user_id'])
+
+        assert user_to_ban
 
         # Ban the given user
         async with db.Database.acquire() as conn:
@@ -98,6 +100,36 @@ class Confession(client.Plugin):
             ),
             ephemeral=True,
         )
+
+    @client.command(
+        options = [
+            n.ApplicationCommandOption(
+                name="message_id",
+                type=n.ApplicationOptionType.string,
+                description="The ID of a confession message"
+            ),
+        ],
+        default_member_permissions=n.Permissions(manage_messages=True),
+        dm_permission=False,
+    )
+    async def get_ban_command(
+            self,
+            ctx: n.types.CommandI,
+            message_id: str
+        ):
+        """
+        Sends a copyable ban command for a confession in the confessions channel.
+        """
+        assert ctx.channel # No DMs
+        
+        message = await ctx.channel.fetch_message(message_id)
+
+        assert message # We have a message
+        assert message.author.id == self.bot.me.id # Confessional sent it
+        assert message.embeds # It has an embed
+        assert message.embed[0].footer # The first embed has a footer
+
+        return await ctx.send(message.embeds[0].footer, ephemeral=True)
 
     @client.command(
         options=[
@@ -254,7 +286,7 @@ class Confession(client.Plugin):
     async def channel_set(
             self,
             ctx: n.types.CommandI,
-            channel: n.TextChannel):
+            channel: n.Channel):
         """
         Sets a confession channel for the bot to run responses to.
         """
@@ -324,7 +356,7 @@ class Confession(client.Plugin):
     async def confess(
             self,
             ctx: n.types.CommandI,
-            channel: n.TextChannel,
+            channel: n.Channel,
             confession: str):
         """
         Send a message over to a confession channel.
